@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SleepMate</string>
+    <string name="service_prferance">com.anyemi.sleepmate.service_prferance</string>
+    <string name="loc_preference">com.anyemi.sleepmate.loc_preference</string>
+</resources>
