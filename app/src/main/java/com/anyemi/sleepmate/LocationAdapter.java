@@ -47,7 +47,7 @@ public class LocationAdapter extends PagedListAdapter<LocationDetails,LocationAd
         final LocationDetails locationD = getItem(position);
         if(locationD != null){
             holder.latitude.setText("Latitude: ".concat(String.valueOf(locationD.getLatitude())));
-            holder.longitude.setText("Londitude: ".concat(String.valueOf(locationD.getLongitude())));
+            holder.longitude.setText("Longitude: ".concat(String.valueOf(locationD.getLongitude())));
             String mode;
             if(locationD.getIdle() == 0){
                 mode = "Idle";

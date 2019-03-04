@@ -3,17 +3,13 @@ package com.anyemi.sleepmate;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.job.JobScheduler;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.arch.paging.PagedList;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
-import android.location.Location;
 
-import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -27,36 +23,25 @@ import android.widget.Toast;
 
 import com.anyemi.sleepmate.Database.LocDatabase;
 import com.anyemi.sleepmate.Database.LocationDetails;
-import com.anyemi.sleepmate.Services.BackGroundServices;
-import com.anyemi.sleepmate.Services.DeviceUtil;
 import com.anyemi.sleepmate.Services.ServiceUtils;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationAvailability;
-import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
-import com.google.android.gms.location.SettingsClient;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -258,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 long elapsedSeconds = different / secondsInMilli;
                                 String diff = ""+elapsedDays+" "+elapsedHours+" "+elapsedMinutes+" "+elapsedSeconds;
 
-                                if(elapsedMinutes>5){
+                                if(elapsedMinutes>=1){
 
                                     updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
                                 }
@@ -308,18 +293,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private void updateIdleTimeForUI(LocationDetails startLoc, LocationDetails ld, long elapsedDays, long elapsedHours, long elapsedMinutes, long elapsedSeconds) {
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        try {
-            Date d = sdf.parse(startLoc.getDateTime());
-
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
 
         IdleModel idleModel = new IdleModel(startLoc.getDateTime(),
                 ld.getDateTime(),elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
 
+        for(IdleModel model: sleepTimeList){
+            if(idleModel.getIdleStartTime().equals(model.getIdleStartTime())){
+                sleepTimeList.remove(model);
+            }
+        }
         sleepTimeList.add(idleModel);
 
         idleTimeAdapter= new IdleTimeAdapter(sleepTimeList,this);
