@@ -41,13 +41,13 @@ import java.util.concurrent.Executors;
 public class BackGroundServices extends JobService {
     private static final String TAG_SERVICE = BackGroundServices.class.getName();
 
-    // location updates interval - 10sec
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    // location updates interval - 1 min
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 2*60*1000;
 
-    // fastest updates interval - 5 sec
+    // fastest updates interval - 1 min
     // location updates will be received if another app is requesting the locations
     // than your app can handle
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 5000;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = 60*1000;
 
     // Notification channel ID.
     private static final String PRIMARY_CHANNEL_ID =
@@ -115,17 +115,17 @@ public class BackGroundServices extends JobService {
                                 }
                             });
 
-                            jobFinished(jobParameters,true);
-                            // remove once the location received
-                            // No need to run it in interval
-                            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+
                         }else {
                             Log.e(TAG_SERVICE,"Loaction Call Back null"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                             mFusedLocationClient.requestLocationUpdates(mLocationRequest,mLocationCallback, Looper.myLooper());
                             jobFinished(jobParameters,true);
                         }
                     }
-
+                    // remove once the location received
+                    // No need to run it in interval
+                    mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+                    jobFinished(jobParameters,true);
                 }
 
                 @Override
@@ -133,8 +133,6 @@ public class BackGroundServices extends JobService {
                     super.onLocationAvailability(locationAvailability);
                 }
             };
-
-
 
 
             mFusedLocationClient.getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -164,7 +162,7 @@ public class BackGroundServices extends JobService {
 
 
                         // When the location is null, There may be a chance that the user might have turned off the GPS manually.
-                        //Show notiication to user that the GPS might be off
+                        //Show notification to user that the GPS might be off
 
                         //for oreo +
                         createNotificationChannel();

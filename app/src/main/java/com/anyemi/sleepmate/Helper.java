@@ -20,7 +20,6 @@ public class Helper {
             calendar.setTime(date1);
             Date newDate = calendar.getTime();
             formatedDate = returnFormat.format(newDate);
-            Log.e("next day a", "" + formatedDate + " p day a: " + date);
 
         } catch (ParseException e) {
             e.printStackTrace();

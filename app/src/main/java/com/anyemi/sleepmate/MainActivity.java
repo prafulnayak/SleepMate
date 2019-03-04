@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         sharedPreferenceConfig = new SharedPreferenceConfig(this);
         latLang = findViewById(R.id.latLan);
 
-        locationDetailsRv = findViewById(R.id.sleep_rv);
+        locationDetailsRv = findViewById(R.id.loc_rv);
 
         idleTimeRv = findViewById(R.id.sleep_rv);
         idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
@@ -175,6 +175,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private void updateData(final LocDatabase mDb) {
 //        sharedPreferenceConfig.writeLocation("no");
 //        latLang.setText(sharedPreferenceConfig.readLocation());
+        Log.e(TAG_MAIN,sharedPreferenceConfig.readLocation());
 
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
@@ -253,6 +254,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
                         }else {
                             //travelling but device is idle: Ignore the state
+                            startLoc = null;
+                            isContineous = false;
                             //Here we can calculate the distance the user travelled as well as where the user is going.
                         }
                     }else {
