@@ -6,12 +6,12 @@ import android.arch.persistence.room.RoomDatabase;
 import android.content.Context;
 import android.util.Log;
 
-@Database(entities = {LocationDetails.class}, version = 4,exportSchema = true)
+@Database(entities = {LocationDetails.class}, version = 6,exportSchema = true)
 public abstract class LocDatabase extends RoomDatabase {
 
     private static final String LOG_TAG = LocDatabase.class.getSimpleName();
     private static final Object LOCK = new Object();
-    private static final String DATABASE_NAME = "newsorg.db";
+    private static final String DATABASE_NAME = "sleepMate.db";
     private static LocDatabase sInstance;
 
     public static LocDatabase getsInstance(Context context){

@@ -50,43 +50,38 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private static boolean isContineous = false;
     private TextView latLang;
 
-    private int locationRequestCode = 11;
-
+    // RecyclerView to display Location and Idle/Active state of device
     private RecyclerView locationDetailsRv;
-    private SharedPreferenceConfig sharedPreferenceConfig;
-
-    private LocViewModel viewModel;
-
+    //PagedListAdapte for recycler view to retrieve data from Room database
     private LocationAdapter adapter;
 
-    private List<IdleModel> sleepTimeList = new ArrayList<>();
+    private SharedPreferenceConfig sharedPreferenceConfig;
 
+    //Recycler view for Idle device time
     private RecyclerView idleTimeRv;
-
+    // List to store the idle device time in details.
+    private List<IdleModel> sleepTimeList = new ArrayList<>();
+    //Adapter for the idleTimeRv
     private IdleTimeAdapter idleTimeAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
         setContentView(R.layout.activity_main);
 
         sharedPreferenceConfig = new SharedPreferenceConfig(this);
-
         latLang = findViewById(R.id.latLan);
-        locationDetailsRv = findViewById(R.id.loc_rv);
 
-
+        locationDetailsRv = findViewById(R.id.sleep_rv);
 
         idleTimeRv = findViewById(R.id.sleep_rv);
         idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
         idleTimeRv.setHasFixedSize(true);
 
         idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
-
         idleTimeRv.setAdapter(idleTimeAdapter);
 
+        //Room Database Initialized
         final LocDatabase mDb = LocDatabase.getsInstance(this);
         updateData(mDb);
 
@@ -95,12 +90,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // reuqest for permission
+            int locationRequestCode = 11;
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                     locationRequestCode);
 
         } else {
             // already permission granted
-            //Check the GPS from hardware
+
+            //Check the GPS from hardware. Why this required ?
+            //Required or android version less then oreo
+            // Some time the user may turn of the GPS or certain reason. It will enable the device GPS automatically when opened.
             EnableGPSAutoMatically();
 
         }
@@ -115,14 +114,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             googleApiClient.connect();
             LocationRequest locationRequest = LocationRequest.create();
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            locationRequest.setInterval(30 * 1000);
-            locationRequest.setFastestInterval(5 * 1000);
+//            locationRequest.setInterval(30 * 1000);
+//            locationRequest.setFastestInterval(5 * 1000);
             LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                     .addLocationRequest(locationRequest);
 
-            // **************************
-            builder.setAlwaysShow(true); // this is the key ingredient
-            // **************************
+            builder.setAlwaysShow(true);
 
             PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi
                     .checkLocationSettings(googleApiClient, builder.build());
@@ -156,7 +153,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             }
                             break;
                         case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-//                            toast("Setting change not allowed");
                             Toast.makeText(MainActivity.this, "Setting change not allowed", Toast.LENGTH_SHORT).show();
                             // Location settings are not satisfied. However, we have
                             // no way to fix the
@@ -168,32 +164,14 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    // Schedule Background job
     private void scheduleJob() {
-//        ComponentName serviceName = new ComponentName(this.getPackageName(),
-//                BackGroundServices.class.getName());
-//        JobInfo jobInfo;
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
-//            jobInfo = new JobInfo.Builder(11,serviceName)
-//                    .setPersisted(true)
-//                    .setMinimumLatency(UPDATE_INTERVAL_IN_MILLISECONDS)
-//                    .build();
-//        }else {
-//            jobInfo = new JobInfo.Builder(11,serviceName)
-//                    .setPersisted(true)
-//                    .setPeriodic(UPDATE_INTERVAL_IN_MILLISECONDS).build();
-//        }
-//
-//
-////        JobInfo jobInfo =builder.build();
-//        jobScheduler.schedule(jobInfo);
-//        DeviceUtil deviceUtil = new DeviceUtil();
-//        deviceUtil.scheduleTask(this);
 
         ServiceUtils serviceUtils = new ServiceUtils();
         serviceUtils.scheduleTask(this);
     }
 
-
+    // update data ti UI from Room database
     private void updateData(final LocDatabase mDb) {
 //        sharedPreferenceConfig.writeLocation("no");
 //        latLang.setText(sharedPreferenceConfig.readLocation());
@@ -206,7 +184,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 for(LocationDetails ld : lDetails){
                     Log.e(TAG_MAIN,""+ld.getDistanceP());
 
-
+                    // check idle state of the device
+                    // 0 for idle state 1 for active state (User is interaction with the device when the Background job ran)
                     if(ld.getIdle() == 0){
 
                         if(!isContineous){
@@ -216,10 +195,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         isContineous = true;
                         //idle state
                         double distance = Double.parseDouble(ld.getDistanceP());
-                        if(distance>0 && distance<30){
-                            // idle state and in one location
+                        // The device is in idle state
+                        // Here two senario arises:
+                        //1. Device is idle But the user is driving keeping the mobile in pocket.
+                        //2. Device is idle and The user is not travelling: Hence we can assume the device is in idle state
+                        //   and in one location
 
-                            //calculate time
+                        // case 2 condition satisfies
+                        if(distance>=0 && distance<=30){
+                            // idle state and in one location
+                            // Here two posibilities arises"
+                            // Device is in idle state and in one location but
+                            // 1.the device is only idle for short period of time and
+                            // 2.the device is idle for long period of time
+
+                            //calculate time to find out for how long the device is idle
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
                             try {
                                 Date endD = sdf.parse(ld.getDateTime());
@@ -231,18 +221,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 long hoursInMilli = minutesInMilli * 60;
                                 long daysInMilli = hoursInMilli * 24;
 
+
+                                // No of Days
                                 long elapsedDays = different / daysInMilli;
                                 different = different % daysInMilli;
-
+                                // How many Hours
                                 long elapsedHours = different / hoursInMilli;
                                 different = different % hoursInMilli;
-
+                                // Minitues
                                 long elapsedMinutes = different / minutesInMilli;
                                 different = different % minutesInMilli;
-
+                                // Seconds
                                 long elapsedSeconds = different / secondsInMilli;
                                 String diff = ""+elapsedDays+" "+elapsedHours+" "+elapsedMinutes+" "+elapsedSeconds;
 
+                                // You can check with Days/ Hours / Minutes/ Seconds
+                                // For example: if you need idle time list which is greater then 2 hours, then
+                                // if(elapsedHours >=2) will work for you
                                 if(elapsedMinutes>=1){
 
                                     updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
@@ -257,7 +252,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             }
 
                         }else {
-                            //travelling but device is idle
+                            //travelling but device is idle: Ignore the state
+                            //Here we can calculate the distance the user travelled as well as where the user is going.
                         }
                     }else {
                         startLoc = null;
@@ -269,18 +265,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         locationDetailsRv.setLayoutManager(new LinearLayoutManager(this));
         locationDetailsRv.setHasFixedSize(true);
-
-        viewModel = ViewModelProviders.of(this).get(LocViewModel.class);
+        //View Model: Responsible for retrieving data from Room database in pagination way.
+        // Observes if there is some changes occured in the database and update the UI accordingly
+        LocViewModel viewModel = ViewModelProviders.of(this).get(LocViewModel.class);
 
         adapter = new LocationAdapter(this);
 
         viewModel.getLocationListLiveData().observe(this, new Observer<PagedList<LocationDetails>>() {
             @Override
             public void onChanged(@Nullable PagedList<LocationDetails> locationDetailList) {
-                //cleare the adapter
+                //clear the adapter
                 adapter.submitList(null);
-                //submit news list to adapter
-                Log.e(TAG_MAIN,"Size : "+locationDetailList.snapshot().size());
+                //submit LocationDetails list to adapter
                 adapter.submitList(locationDetailList);
                 locationDetailsRv.setAdapter(adapter);
                 adapter.notifyDataSetChanged();
@@ -291,6 +287,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
+    // Update the idleModel list and update the UI
     private void updateIdleTimeForUI(LocationDetails startLoc, LocationDetails ld, long elapsedDays, long elapsedHours, long elapsedMinutes, long elapsedSeconds) {
 
 
@@ -302,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 sleepTimeList.remove(model);
             }
         }
+
         sleepTimeList.add(idleModel);
 
         idleTimeAdapter= new IdleTimeAdapter(sleepTimeList,this);
@@ -320,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+                    // Location Granted. Schedule the background Job.
                     scheduleJob();
 
                 } else {
@@ -335,7 +333,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         if (requestCode == 1000) {
             if(resultCode == Activity.RESULT_OK){
-
+                // Once the GPS on again. Schedule the background job
                 scheduleJob();
 
             }

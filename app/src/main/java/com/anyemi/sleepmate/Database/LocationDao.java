@@ -14,9 +14,6 @@ public interface LocationDao {
     @Query("SELECT * FROM LocationDetails ORDER BY id DESC")
     DataSource.Factory<Integer, LocationDetails> allLocationDetails();
 
-    @Query("SELECT * FROM LocationDetails WHERE latitude = :titleDesc")
-    LocationDetails getSingleNews(String titleDesc);
-
     @Query("SELECT * FROM LocationDetails ORDER BY id DESC LIMIT 1")
     LocationDetails lastLocationDetails();
 

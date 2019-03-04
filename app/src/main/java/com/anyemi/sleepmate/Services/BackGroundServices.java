@@ -62,6 +62,7 @@ public class BackGroundServices extends JobService {
 
     private static double lat, lan;
 
+    // Power manager to know the device status
     PowerManager pm;
     int isIntracting = 0;
 
@@ -71,6 +72,7 @@ public class BackGroundServices extends JobService {
         Log.e(TAG_SERVICE, "on start job called");
         pm = (PowerManager)getApplicationContext().getSystemService(Context.POWER_SERVICE);
 
+        // User is intraction with the device
         if(pm.isInteractive()){
             Log.e(TAG_SERVICE,"yes intracting");
             isIntracting = 1;
@@ -86,6 +88,9 @@ public class BackGroundServices extends JobService {
             mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
             mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+            // Use Location CallBack if fusedLocation returns null
+            // This is required because, fusedLocationProviderClient gives result few time in an hour on devices higher then Nouget
+            // in background
             mLocationCallback = new LocationCallback(){
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
@@ -101,6 +106,7 @@ public class BackGroundServices extends JobService {
                             lan = location.getLongitude();
                             Log.e(TAG_SERVICE,"Loaction Call Back"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
 
+                            // Insert Location details in Room database
                             final LocDatabase mDb = LocDatabase.getsInstance(BackGroundServices.this);
                             Executors.newSingleThreadExecutor().execute(new Runnable() {
                                 @Override
@@ -110,7 +116,8 @@ public class BackGroundServices extends JobService {
                             });
 
                             jobFinished(jobParameters,true);
-//                        latLang.setText(String.format(Locale.getDefault(), "%s -- %s", lat, lan));
+                            // remove once the location received
+                            // No need to run it in interval
                             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
                         }else {
                             Log.e(TAG_SERVICE,"Loaction Call Back null"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
@@ -119,7 +126,6 @@ public class BackGroundServices extends JobService {
                         }
                     }
 
-//                updateData(mCurrentLocation);
                 }
 
                 @Override
@@ -135,6 +141,7 @@ public class BackGroundServices extends JobService {
                 @Override
                 public void onSuccess(Location location) {
                     if (location != null) {
+
                         lat = location.getLatitude();
                         lan = location.getLongitude();
                         Toast.makeText(BackGroundServices.this, "Fused Location success", Toast.LENGTH_SHORT).show();
@@ -155,6 +162,10 @@ public class BackGroundServices extends JobService {
                     }else {
                         Toast.makeText(BackGroundServices.this, "Fused Location null", Toast.LENGTH_SHORT).show();
 
+
+                        // When the location is null, There may be a chance that the user might have turned off the GPS manually.
+                        //Show notiication to user that the GPS might be off
+
                         //for oreo +
                         createNotificationChannel();
 
@@ -166,7 +177,7 @@ public class BackGroundServices extends JobService {
                         final NotificationCompat.Builder builder = new NotificationCompat.Builder
                                 (BackGroundServices.this, PRIMARY_CHANNEL_ID)
                                 .setContentTitle("GPS Location")
-                                .setContentText("Check Your GPS Location")
+                                .setContentText("Check Your GPS Status For Better Result")
                                 .setContentIntent(contentPendingIntent)
                                 .setSmallIcon(R.drawable.ic_location)
                                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -175,10 +186,11 @@ public class BackGroundServices extends JobService {
 
                         mNotifyManager.notify(0, builder.build());
 
-
-
                         Log.e(TAG_SERVICE,"Fused Location null: "+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                         sharedPreferenceConfig.writeLocation(sharedPreferenceConfig.readLocation().concat("null "+lat+" / "+lan));
+                        // Since the lcation is null.
+                        //Request to update the location
+                        //Location callback is called to get the location
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest,mLocationCallback, Looper.myLooper());
                         jobFinished(jobParameters,true);
                     }
@@ -230,7 +242,6 @@ public class BackGroundServices extends JobService {
     private void insertLocationToDb(final double lat, final double lan, final LocDatabase mDb) {
 
 
-
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
@@ -244,7 +255,7 @@ public class BackGroundServices extends JobService {
                     Location startPoint = new Location("locationA");
                     startPoint.setLatitude(lat);
                     startPoint.setLongitude(lan);
-
+                    // Distance between the current location and the last location
                     dist= startPoint.distanceTo(endPoint);
 
                     int id = mDb.locationDao().getLastId();
@@ -267,18 +278,6 @@ public class BackGroundServices extends JobService {
                     mDb.locationDao().insert(singleLoc);
                 }
 
-            }
-        });
-
-
-//        final LocationDetails singleLoc = new LocationDetails(String.valueOf(lat),String.valueOf(lan),"hello","20");
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-//                mDb.locationDao().insert(singleLoc);
-                //if new data is inserted to database notify to user
-//                if(!news.getTitle().isEmpty())
-//                    CommonUtils.showNotification(context,news.getTitle());
             }
         });
 
