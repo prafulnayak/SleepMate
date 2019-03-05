@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 // You can check with Days/ Hours / Minutes/ Seconds
                                 // For example: if you need idle time list which is greater then 2 hours, then
                                 // if(elapsedHours >=2) will work for you
-                                if(elapsedHours>=1){
+                                if(elapsedHours>=2){
 
                                     updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
                                 }
