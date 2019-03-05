@@ -191,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         //   and in one location
 
                         // case 2 condition satisfies
-                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. Look into the else part: We can ask user to respond correctly
+                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. look into the else part: We can ask user to respond correctly
                             // idle state and in one location
                             // Here two possibilities arises"
                             // Device is in idle state and in one location but
