@@ -154,9 +154,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             break;
                         case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                             Toast.makeText(MainActivity.this, "Setting change not allowed", Toast.LENGTH_SHORT).show();
-                            // Location settings are not satisfied. However, we have
-                            // no way to fix the
-                            // settings so we won't show the dialog.
+                            // Location settings are not satisfied.
                             break;
                     }
                 }
@@ -187,6 +185,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
                     // check idle state of the device
                     // 0 for idle state 1 for active state (User is interaction with the device when the Background job ran)
+                    // we assume the last active section to be counted as the device is idle just before being active.
                     if(ld.getIdle() == 0){
 
                         if(!isContineous){
@@ -197,15 +196,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         //idle state
                         double distance = Double.parseDouble(ld.getDistanceP());
                         // The device is in idle state
-                        // Here two senario arises:
+                        // Here two scenario arises:
                         //1. Device is idle But the user is driving keeping the mobile in pocket.
                         //2. Device is idle and The user is not travelling: Hence we can assume the device is in idle state
                         //   and in one location
 
                         // case 2 condition satisfies
-                        if(distance>=0 && distance<=30){
+                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. Sell the else part: We can ask user to respond correctly
                             // idle state and in one location
-                            // Here two posibilities arises"
+                            // Here two possibilities arises"
                             // Device is in idle state and in one location but
                             // 1.the device is only idle for short period of time and
                             // 2.the device is idle for long period of time
@@ -239,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                                 // You can check with Days/ Hours / Minutes/ Seconds
                                 // For example: if you need idle time list which is greater then 2 hours, then
                                 // if(elapsedHours >=2) will work for you
-                                if(elapsedMinutes>=1){
+                                if(elapsedHours>=1){
 
                                     updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
                                 }
@@ -254,13 +253,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
                         }else {
                             //travelling but device is idle: Ignore the state
+
+                            // Some time the location provided by the API may not be accurate.
+                            //Here we can show a alertDialog to ask user weather he was travelling the distance during that period.
+                            //and update the distance in room to get correct result
+                            // By doing this we can get the accuracy.
+
                             startLoc = null;
                             isContineous = false;
+
                             //Here we can calculate the distance the user travelled as well as where the user is going.
                         }
                     }else {
-                        startLoc = null;
-                        isContineous = false;
+                        startLoc = ld;
+//                        startLoc = null;
+                        isContineous = true;
                     }
                 }
             }

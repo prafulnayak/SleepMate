@@ -2,4 +2,6 @@
     <string name="app_name">SleepMate</string>
     <string name="service_prferance">com.anyemi.sleepmate.service_prferance</string>
     <string name="loc_preference">com.anyemi.sleepmate.loc_preference</string>
+    <string name="room_db_heading">Location/Time/Distance Details</string>
+    <string name="idle_rv_heading">Idle Time of the User</string>
 </resources>

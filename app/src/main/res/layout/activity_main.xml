@@ -15,7 +15,9 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:text="Idle Time of the User" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:text="@string/idle_rv_heading" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/sleep_rv"
@@ -34,7 +36,9 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:text="Location/Time/Distance Details" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:text="@string/room_db_heading" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/loc_rv"

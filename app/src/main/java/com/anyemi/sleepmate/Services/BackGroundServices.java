@@ -41,7 +41,7 @@ import java.util.concurrent.Executors;
 public class BackGroundServices extends JobService {
     private static final String TAG_SERVICE = BackGroundServices.class.getName();
 
-    // location updates interval - 1 min
+    // location updates interval - 2 min
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 2*60*1000;
 
     // fastest updates interval - 1 min
@@ -250,7 +250,7 @@ public class BackGroundServices extends JobService {
                     endPoint.setLatitude(Double.parseDouble(locationDetails.getLatitude()));
                     endPoint.setLongitude(Double.parseDouble(locationDetails.getLongitude()));
 
-                    Location startPoint = new Location("locationA");
+                    Location startPoint = new Location("locationB");
                     startPoint.setLatitude(lat);
                     startPoint.setLongitude(lan);
                     // Distance between the current location and the last location
