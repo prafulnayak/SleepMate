@@ -58,8 +58,6 @@ public class BackGroundServices extends JobService {
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
 
-    private SharedPreferenceConfig sharedPreferenceConfig;
-
     private static double lat, lan;
 
     // Power manager to know the device status
@@ -69,19 +67,18 @@ public class BackGroundServices extends JobService {
     @SuppressLint("MissingPermission")
     @Override
     public boolean onStartJob(final JobParameters jobParameters) {
-        Log.e(TAG_SERVICE, "on start job called");
+
         pm = (PowerManager)getApplicationContext().getSystemService(Context.POWER_SERVICE);
 
         // User is intraction with the device
         if(pm.isInteractive()){
-            Log.e(TAG_SERVICE,"yes intracting");
+            Log.v(TAG_SERVICE,"yes interacting");
             isIntracting = 1;
         }else {
-            Log.e(TAG_SERVICE, "not intracting");
+            Log.v(TAG_SERVICE, "not interacting");
             isIntracting = 0;
         }
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(BackGroundServices.this);
-            sharedPreferenceConfig = new SharedPreferenceConfig(BackGroundServices.this);
 
             mLocationRequest = new LocationRequest();
             mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
@@ -97,14 +94,12 @@ public class BackGroundServices extends JobService {
                     super.onLocationResult(locationResult);
                     // location is received
                     if (locationResult == null) {
-                        Log.e(TAG_SERVICE,"Location result"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                         return;
                     }
                     for (Location location : locationResult.getLocations()) {
                         if (location != null) {
                             lat = location.getLatitude();
                             lan = location.getLongitude();
-                            Log.e(TAG_SERVICE,"Loaction Call Back"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
 
                             // Insert Location details in Room database
                             final LocDatabase mDb = LocDatabase.getsInstance(BackGroundServices.this);
@@ -117,7 +112,6 @@ public class BackGroundServices extends JobService {
 
 
                         }else {
-                            Log.e(TAG_SERVICE,"Loaction Call Back null"+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                             mFusedLocationClient.requestLocationUpdates(mLocationRequest,mLocationCallback, Looper.myLooper());
                             jobFinished(jobParameters,true);
                         }
@@ -142,8 +136,6 @@ public class BackGroundServices extends JobService {
 
                         lat = location.getLatitude();
                         lan = location.getLongitude();
-                        Toast.makeText(BackGroundServices.this, "Fused Location success", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG_SERVICE,"Fused Location success: "+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
 
                         final LocDatabase mDb = LocDatabase.getsInstance(BackGroundServices.this);
                         Executors.newSingleThreadExecutor().execute(new Runnable() {
@@ -153,13 +145,9 @@ public class BackGroundServices extends JobService {
                             }
                         });
 
-                        sharedPreferenceConfig.writeLocation(sharedPreferenceConfig.readLocation().concat(""+lat+" / "+lan));
-
                         jobFinished(jobParameters,true);
 //                                latLang.setText(String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                     }else {
-                        Toast.makeText(BackGroundServices.this, "Fused Location null", Toast.LENGTH_SHORT).show();
-
 
                         // When the location is null, There may be a chance that the user might have turned off the GPS manually.
                         //Show notification to user that the GPS might be off
@@ -184,8 +172,6 @@ public class BackGroundServices extends JobService {
 
                         mNotifyManager.notify(0, builder.build());
 
-                        Log.e(TAG_SERVICE,"Fused Location null: "+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
-                        sharedPreferenceConfig.writeLocation(sharedPreferenceConfig.readLocation().concat("null "+lat+" / "+lan));
                         // Since the lcation is null.
                         //Request to update the location
                         //Location callback is called to get the location
@@ -196,8 +182,6 @@ public class BackGroundServices extends JobService {
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Toast.makeText(BackGroundServices.this, "Fused Location failed", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG_SERVICE,"Fused Location failed: "+String.format(Locale.getDefault(), "%s -- %s", lat, lan));
                     Log.e(TAG_SERVICE,"Fused Location failed exception: "+e.toString());
                 }
             });
@@ -284,7 +268,6 @@ public class BackGroundServices extends JobService {
     @Override
     public boolean onStopJob(JobParameters jobParameters) {
         Log.e(TAG_SERVICE, "on stop called");
-        sharedPreferenceConfig.writeLocation(sharedPreferenceConfig.readLocation().concat(" on stop"));
         return true;
     }
 }

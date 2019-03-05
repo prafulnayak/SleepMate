@@ -47,15 +47,12 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private static final String TAG_MAIN = MainActivity.class.getSimpleName();
-    private static boolean isContineous = false;
-    private TextView latLang;
+    private static boolean isContinuous = false;
 
     // RecyclerView to display Location and Idle/Active state of device
     private RecyclerView locationDetailsRv;
     //PagedListAdapte for recycler view to retrieve data from Room database
     private LocationAdapter adapter;
-
-    private SharedPreferenceConfig sharedPreferenceConfig;
 
     //Recycler view for Idle device time
     private RecyclerView idleTimeRv;
@@ -68,9 +65,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        sharedPreferenceConfig = new SharedPreferenceConfig(this);
-        latLang = findViewById(R.id.latLan);
 
         locationDetailsRv = findViewById(R.id.loc_rv);
 
@@ -114,8 +108,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             googleApiClient.connect();
             LocationRequest locationRequest = LocationRequest.create();
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//            locationRequest.setInterval(30 * 1000);
-//            locationRequest.setFastestInterval(5 * 1000);
             LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
                     .addLocationRequest(locationRequest);
 
@@ -171,9 +163,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     // update data ti UI from Room database
     private void updateData(final LocDatabase mDb) {
-//        sharedPreferenceConfig.writeLocation("no");
-//        latLang.setText(sharedPreferenceConfig.readLocation());
-        Log.e(TAG_MAIN,sharedPreferenceConfig.readLocation());
 
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
@@ -188,11 +177,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     // we assume the last active section to be counted as the device is idle just before being active.
                     if(ld.getIdle() == 0){
 
-                        if(!isContineous){
+                        if(!isContinuous){
                             startLoc = ld;
                         }
 
-                        isContineous = true;
+                        isContinuous = true;
                         //idle state
                         double distance = Double.parseDouble(ld.getDistanceP());
                         // The device is in idle state
@@ -202,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         //   and in one location
 
                         // case 2 condition satisfies
-                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. Sell the else part: We can ask user to respond correctly
+                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. Look into the else part: We can ask user to respond correctly
                             // idle state and in one location
                             // Here two possibilities arises"
                             // Device is in idle state and in one location but
@@ -260,14 +249,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             // By doing this we can get the accuracy.
 
                             startLoc = null;
-                            isContineous = false;
+                            isContinuous = false;
 
                             //Here we can calculate the distance the user travelled as well as where the user is going.
                         }
                     }else {
                         startLoc = ld;
-//                        startLoc = null;
-                        isContineous = true;
+                        isContinuous = true;
                     }
                 }
             }
