@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         idleTimeRv = findViewById(R.id.sleep_rv);
         idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
         idleTimeRv.setHasFixedSize(true);
-
         idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
         idleTimeRv.setAdapter(idleTimeAdapter);
 
@@ -258,6 +257,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         isContinuous = true;
                     }
                 }
+
+                setIdleRV();
             }
         });
 
@@ -285,6 +286,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
+    private void setIdleRV() {
+        idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
+        idleTimeRv.setHasFixedSize(true);
+        idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
+        idleTimeRv.setAdapter(idleTimeAdapter);
+
+        idleTimeAdapter.notifyDataSetChanged();
+
+    }
+
     // Update the idleModel list and update the UI
     private void updateIdleTimeForUI(LocationDetails startLoc, LocationDetails ld, long elapsedDays, long elapsedHours, long elapsedMinutes, long elapsedSeconds) {
 
@@ -300,9 +311,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         sleepTimeList.add(idleModel);
 
-        idleTimeAdapter= new IdleTimeAdapter(sleepTimeList,this);
-        idleTimeRv.setAdapter(idleTimeAdapter);
-        idleTimeAdapter.notifyDataSetChanged();
+
 
     }
 
