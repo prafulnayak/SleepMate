@@ -2,14 +2,13 @@ package com.anyemi.sleepmate;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.arch.paging.PagedList;
-import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -18,7 +17,6 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.anyemi.sleepmate.Database.LocDatabase;
@@ -69,10 +67,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         locationDetailsRv = findViewById(R.id.loc_rv);
 
         idleTimeRv = findViewById(R.id.sleep_rv);
-        idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
-        idleTimeRv.setHasFixedSize(true);
-        idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
-        idleTimeRv.setAdapter(idleTimeAdapter);
+//        idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
+//        idleTimeRv.setHasFixedSize(true);
+//        idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
+//        idleTimeRv.setAdapter(idleTimeAdapter);
 
         //Room Database Initialized
         final LocDatabase mDb = LocDatabase.getsInstance(this);
@@ -163,102 +161,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     // update data ti UI from Room database
     private void updateData(final LocDatabase mDb) {
 
+        AsyncTaskForUI asyncTaskForUI = new AsyncTaskForUI(mDb);
+        asyncTaskForUI.execute();
+
         Executors.newSingleThreadExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                List<LocationDetails> lDetails = mDb.locationDao().allDetails();
-                LocationDetails startLoc = null;
-                for(LocationDetails ld : lDetails){
-                    Log.e(TAG_MAIN,""+ld.getDistanceP());
-
-                    // check idle state of the device
-                    // 0 for idle state 1 for active state (User is interaction with the device when the Background job ran)
-                    // we assume the last active section to be counted as the device is idle just before being active.
-                    if(ld.getIdle() == 0){
-
-                        if(!isContinuous){
-                            startLoc = ld;
-                        }
-
-                        isContinuous = true;
-                        //idle state
-                        double distance = Double.parseDouble(ld.getDistanceP());
-                        // The device is in idle state
-                        // Here two scenario arises:
-                        //1. Device is idle But the user is driving keeping the mobile in pocket.
-                        //2. Device is idle and The user is not travelling: Hence we can assume the device is in idle state
-                        //   and in one location
-
-                        // case 2 condition satisfies
-                        if(distance>=0 && distance<=500){ // some time the location may not be accurate. look into the else part: We can ask user to respond correctly
-                            // idle state and in one location
-                            // Here two possibilities arises"
-                            // Device is in idle state and in one location but
-                            // 1.the device is only idle for short period of time and
-                            // 2.the device is idle for long period of time
-
-                            //calculate time to find out for how long the device is idle
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-                            try {
-                                Date endD = sdf.parse(ld.getDateTime());
-                                Date startD = sdf.parse(startLoc.getDateTime());
-                                long different = startD.getTime() - endD.getTime();
-//                                String diff = Helper.getDifference(endD,startD);
-                                long secondsInMilli = 1000;
-                                long minutesInMilli = secondsInMilli * 60;
-                                long hoursInMilli = minutesInMilli * 60;
-                                long daysInMilli = hoursInMilli * 24;
 
 
-                                // No of Days
-                                long elapsedDays = different / daysInMilli;
-                                different = different % daysInMilli;
-                                // How many Hours
-                                long elapsedHours = different / hoursInMilli;
-                                different = different % hoursInMilli;
-                                // Minitues
-                                long elapsedMinutes = different / minutesInMilli;
-                                different = different % minutesInMilli;
-                                // Seconds
-                                long elapsedSeconds = different / secondsInMilli;
-                                String diff = ""+elapsedDays+" "+elapsedHours+" "+elapsedMinutes+" "+elapsedSeconds;
-
-                                // You can check with Days/ Hours / Minutes/ Seconds
-                                // For example: if you need idle time list which is greater then 2 hours, then
-                                // if(elapsedHours >=2) will work for you
-                                if(elapsedHours>=2){
-
-                                    updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
-                                }
-
-                                Log.e(TAG_MAIN,"diff: "+diff);
-
-                            } catch (ParseException ex) {
-                                Log.e("Exception", ex.getLocalizedMessage());
-                            }catch (NullPointerException ex){
-                                Log.e("Exception", ex.getLocalizedMessage());
-                            }
-
-                        }else {
-                            //travelling but device is idle: Ignore the state
-
-                            // Some time the location provided by the API may not be accurate.
-                            //Here we can show a alertDialog to ask user weather he was travelling the distance during that period.
-                            //and update the distance in room to get correct result
-                            // By doing this we can get the accuracy.
-
-                            startLoc = null;
-                            isContinuous = false;
-
-                            //Here we can calculate the distance the user travelled as well as where the user is going.
-                        }
-                    }else {
-                        startLoc = ld;
-                        isContinuous = true;
-                    }
-                }
-
-                setIdleRV();
+//                setIdleRV(idleModels);
             }
         });
 
@@ -286,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
-    private void setIdleRV() {
+    private  void setIdleRV(List<IdleModel> sleepTimeList) {
         idleTimeRv.setLayoutManager(new LinearLayoutManager(this));
         idleTimeRv.setHasFixedSize(true);
         idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
@@ -296,24 +207,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     }
 
-    // Update the idleModel list and update the UI
-    private void updateIdleTimeForUI(LocationDetails startLoc, LocationDetails ld, long elapsedDays, long elapsedHours, long elapsedMinutes, long elapsedSeconds) {
 
-
-        IdleModel idleModel = new IdleModel(startLoc.getDateTime(),
-                ld.getDateTime(),elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
-
-        for(IdleModel model: sleepTimeList){
-            if(idleModel.getIdleStartTime().equals(model.getIdleStartTime())){
-                sleepTimeList.remove(model);
-            }
-        }
-
-        sleepTimeList.add(idleModel);
-
-
-
-    }
 
     @SuppressLint("MissingPermission")
     @Override
@@ -349,6 +243,133 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    private class AsyncTaskForUI extends AsyncTask<Void, Void, List<IdleModel>>{
+        LocDatabase mDb;
+        private List<IdleModel> sleepTimeList = new ArrayList<>();
+
+        AsyncTaskForUI(LocDatabase mDb) {
+            this.mDb = mDb;
+        }
+
+        @Override
+        protected List<IdleModel> doInBackground(Void... voids) {
+            List<LocationDetails> lDetails = mDb.locationDao().allDetails();
+            LocationDetails startLoc = null;
+            for(LocationDetails ld : lDetails){
+                Log.e(TAG_MAIN,""+ld.getDistanceP());
+
+                // check idle state of the device
+                // 0 for idle state 1 for active state (User is interaction with the device when the Background job ran)
+                // we assume the last active section to be counted as the device is idle just before being active.
+                if(ld.getIdle() == 0){
+
+                    if(!isContinuous){
+                        startLoc = ld;
+                    }
+
+                    isContinuous = true;
+                    //idle state
+                    double distance = Double.parseDouble(ld.getDistanceP());
+                    // The device is in idle state
+                    // Here two scenario arises:
+                    //1. Device is idle But the user is driving keeping the mobile in pocket.
+                    //2. Device is idle and The user is not travelling: Hence we can assume the device is in idle state
+                    //   and in one location
+
+                    // case 2 condition satisfies
+                    if(distance>=0 && distance<=500){ // some time the location may not be accurate. look into the else part: We can ask user to respond correctly
+                        // idle state and in one location
+                        // Here two possibilities arises"
+                        // Device is in idle state and in one location but
+                        // 1.the device is only idle for short period of time and
+                        // 2.the device is idle for long period of time
+
+                        //calculate time to find out for how long the device is idle
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+                        try {
+                            Date endD = sdf.parse(ld.getDateTime());
+                            Date startD = sdf.parse(startLoc.getDateTime());
+                            long different = startD.getTime() - endD.getTime();
+//                                String diff = Helper.getDifference(endD,startD);
+                            long secondsInMilli = 1000;
+                            long minutesInMilli = secondsInMilli * 60;
+                            long hoursInMilli = minutesInMilli * 60;
+                            long daysInMilli = hoursInMilli * 24;
+
+
+                            // No of Days
+                            long elapsedDays = different / daysInMilli;
+                            different = different % daysInMilli;
+                            // How many Hours
+                            long elapsedHours = different / hoursInMilli;
+                            different = different % hoursInMilli;
+                            // Minitues
+                            long elapsedMinutes = different / minutesInMilli;
+                            different = different % minutesInMilli;
+                            // Seconds
+                            long elapsedSeconds = different / secondsInMilli;
+                            String diff = ""+elapsedDays+" "+elapsedHours+" "+elapsedMinutes+" "+elapsedSeconds;
+
+                            // You can check with Days/ Hours / Minutes/ Seconds
+                            // For example: if you need idle time list which is greater then 2 hours, then
+                            // if(elapsedHours >=2) will work for you
+                            if(elapsedHours>=2){
+
+//                                updateIdleTimeForUI(startLoc,ld,elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
+                                IdleModel idleModel = new IdleModel(startLoc.getDateTime(),
+                                        ld.getDateTime(),elapsedDays,elapsedHours,elapsedMinutes,elapsedSeconds);
+
+                                for(IdleModel model: sleepTimeList){
+                                    if(idleModel.getIdleStartTime().equals(model.getIdleStartTime())){
+                                        sleepTimeList.remove(model);
+                                    }
+                                }
+
+                                sleepTimeList.add(idleModel);
+                            }
+
+                            Log.e(TAG_MAIN,"diff: "+diff);
+
+                        } catch (ParseException ex) {
+                            Log.e("Exception", ex.getLocalizedMessage());
+                        }catch (NullPointerException ex){
+                            Log.e("Exception", ex.getLocalizedMessage());
+                        }
+
+                    }else {
+                        //travelling but device is idle: Ignore the state
+
+                        // Some time the location provided by the API may not be accurate.
+                        //Here we can show a alertDialog to ask user weather he was travelling the distance during that period.
+                        //and update the distance in room to get correct result
+                        // By doing this we can get the accuracy.
+
+                        startLoc = null;
+                        isContinuous = false;
+
+                        //Here we can calculate the distance the user travelled as well as where the user is going.
+                    }
+                }else {
+                    startLoc = ld;
+                    isContinuous = true;
+                }
+            }
+            return sleepTimeList;
+        }
+
+        @Override
+        protected void onPostExecute(List<IdleModel> idleModels) {
+            super.onPostExecute(sleepTimeList);
+            setIdleRV(sleepTimeList);
+        }
+
+
+
+
+
 
     }
 }
