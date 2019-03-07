@@ -292,7 +292,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         idleTimeAdapter = new IdleTimeAdapter(sleepTimeList,this);
         idleTimeRv.setAdapter(idleTimeAdapter);
 
-        idleTimeAdapter.notifyDataSetChanged();
+//        idleTimeAdapter.notifyDataSetChanged();
 
     }
 
@@ -335,20 +335,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if (requestCode == 1000) {
-            if(resultCode == Activity.RESULT_OK){
-                // Once the GPS on again. Schedule the background job
-                scheduleJob();
-
-            }
-            if (resultCode == Activity.RESULT_CANCELED) {
-                //Write your code if there's no result
-            }
-        }
-    }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
